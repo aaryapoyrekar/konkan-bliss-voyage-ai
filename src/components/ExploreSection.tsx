@@ -52,7 +52,7 @@ const staticPackages: Package[] = [
   {
     id: "1",
     title: "Tarkarli Beach Paradise",
-    image_url: "https://images.unsplash.com/photo-1500673922987-e212871fec22?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
+    image_url: "https://images.unsplash.com/photo-1544551763-46a013bb70d5?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
     description: "Crystal clear waters perfect for water sports and relaxation",
     highlights: ["Water Sports", "Scuba Diving", "Beach Activities"],
     price: 4500,
@@ -65,7 +65,7 @@ const staticPackages: Package[] = [
   {
     id: "2",
     title: "Sindhudurg Fort Heritage Tour",
-    image_url: "https://images.unsplash.com/photo-1466442929976-97f336a657be?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
+    image_url: "https://images.unsplash.com/photo-1590736969955-71cc94901144?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
     description: "Historic sea fort built by Chhatrapati Shivaji Maharaj",
     highlights: ["Historical", "Architecture", "Photography"],
     price: 2500,
@@ -78,7 +78,7 @@ const staticPackages: Package[] = [
   {
     id: "3",
     title: "Amboli Monsoon Magic",
-    image_url: "https://images.unsplash.com/photo-1482938289607-e9573fc25ebb?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
+    image_url: "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
     description: "Breathtaking waterfalls surrounded by lush greenery",
     highlights: ["Waterfalls", "Trekking", "Nature Photography"],
     price: 3200,
@@ -91,7 +91,7 @@ const staticPackages: Package[] = [
   {
     id: "4",
     title: "Malvani Food Festival Experience",
-    image_url: "https://images.unsplash.com/photo-1565299624946-b28f40a0ca4b?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
+    image_url: "https://images.unsplash.com/photo-1585032226651-759b368d7246?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
     description: "Authentic Malvani cuisine and cultural experiences",
     highlights: ["Local Cuisine", "Cultural Shows", "Cooking Classes"],
     price: 1800,
@@ -102,7 +102,7 @@ const staticPackages: Package[] = [
   {
     id: "5",
     title: "Ganesh Chaturthi Celebration",
-    image_url: "https://images.unsplash.com/photo-1578662996442-48f60103fc96?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
+    image_url: "https://images.unsplash.com/photo-1567241893770-9c428a7bc6c6?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
     description: "Experience the grand Ganesh festival celebrations",
     highlights: ["Festival", "Processions", "Traditional Music"],
     price: 2200,
@@ -113,7 +113,7 @@ const staticPackages: Package[] = [
   {
     id: "6",
     title: "Vengurla Hidden Beach Retreat",
-    image_url: "https://images.unsplash.com/photo-1500673922987-e212871fec22?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
+    image_url: "https://images.unsplash.com/photo-1559827260-dc66d52bef19?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
     description: "Pristine beach with golden sand and coconut groves",
     highlights: ["Secluded Beach", "Sunset Views", "Peaceful"],
     price: 3800,
@@ -126,7 +126,7 @@ const staticPackages: Package[] = [
   {
     id: "7",
     title: "Kunkeshwar Temple Trail",
-    image_url: "https://images.unsplash.com/photo-1564507592333-c60657eea523?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
+    image_url: "https://images.unsplash.com/photo-1605538883669-825200433431?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
     description: "Sacred temples and spiritual experiences",
     highlights: ["Ancient Temples", "Spiritual Journey", "Architecture"],
     price: 1500,
@@ -137,7 +137,7 @@ const staticPackages: Package[] = [
   {
     id: "8",
     title: "Winter Konkan Escape",
-    image_url: "https://images.unsplash.com/photo-1500673922987-e212871fec22?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
+    image_url: "https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
     description: "Perfect winter getaway with pleasant weather",
     highlights: ["Pleasant Weather", "Beach Activities", "Sightseeing"],
     price: 5200,
@@ -148,7 +148,7 @@ const staticPackages: Package[] = [
   {
     id: "9",
     title: "Konkan Nature Photography Tour",
-    image_url: "https://images.unsplash.com/photo-1441974231531-c6227db76b6e?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
+    image_url: "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
     description: "Capture the natural beauty of Konkan coast",
     highlights: ["Photography", "Wildlife", "Landscapes"],
     price: 4200,
