@@ -1,3 +1,4 @@
+
 import { Navigation } from "@/components/Navigation";
 import { Footer } from "@/components/Footer";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -33,13 +34,13 @@ const About = () => {
       icon: Leaf,
       title: "Sustainable Tourism",
       description: "Promoting eco-friendly travel that preserves Konkan's natural beauty for future generations.",
-      color: "konkan-forest"
+      color: "konkan-turquoise"
     },
     {
       icon: Heart,
       title: "Authentic Experiences",
       description: "Connecting travelers with genuine local culture, traditions, and hidden gems.",
-      color: "konkan-orange"
+      color: "konkan-turquoise"
     },
     {
       icon: Users,
@@ -51,7 +52,7 @@ const About = () => {
       icon: Award,
       title: "Excellence",
       description: "Delivering exceptional travel experiences through innovation and attention to detail.",
-      color: "konkan-sand"
+      color: "konkan-turquoise"
     }
   ];
 
