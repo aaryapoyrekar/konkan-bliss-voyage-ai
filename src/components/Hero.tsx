@@ -1,3 +1,4 @@
+
 import { Button } from "@/components/ui/button";
 import { ArrowDown, Map, Star, Sparkles, MessageCircle } from "lucide-react";
 import { motion } from "framer-motion";
@@ -97,7 +98,7 @@ export const Hero = () => {
             <Link to="/ai-planner">
               <Button 
                 size="lg" 
-                className="bg-gradient-to-r from-konkan-orange-500 to-konkan-orange-600 hover:from-konkan-orange-600 hover:to-konkan-orange-700 text-white border-0 px-8 py-4 text-lg font-semibold rounded-2xl shadow-2xl hover-lift group"
+                className="bg-yellow-500 hover:bg-yellow-600 text-black border-0 px-8 py-4 text-lg font-semibold rounded-2xl shadow-2xl hover-lift group"
               >
                 <Sparkles className="mr-2 group-hover:rotate-12 transition-transform" size={20} />
                 Plan Your Journey
@@ -107,8 +108,7 @@ export const Hero = () => {
             <Link to="/explore">
               <Button 
                 size="lg" 
-                variant="outline" 
-                className="border-2 border-white/30 text-white hover:bg-white/10 backdrop-blur-sm px-8 py-4 text-lg font-semibold rounded-2xl hover-lift group"
+                className="bg-yellow-500 hover:bg-yellow-600 text-black border-0 px-8 py-4 text-lg font-semibold rounded-2xl shadow-2xl hover-lift group"
               >
                 <Map className="mr-2 group-hover:scale-110 transition-transform" size={20} />
                 Explore Destinations
@@ -118,7 +118,7 @@ export const Hero = () => {
             <Link to="/chat">
               <Button 
                 size="lg" 
-                className="bg-gradient-to-r from-konkan-turquoise-500 to-konkan-turquoise-600 hover:from-konkan-turquoise-600 hover:to-konkan-turquoise-700 text-white border-0 px-8 py-4 text-lg font-semibold rounded-2xl shadow-2xl hover-lift group"
+                className="bg-yellow-500 hover:bg-yellow-600 text-black border-0 px-8 py-4 text-lg font-semibold rounded-2xl shadow-2xl hover-lift group"
               >
                 <MessageCircle className="mr-2 group-hover:bounce transition-transform" size={20} />
                 Talk to AI Guide
