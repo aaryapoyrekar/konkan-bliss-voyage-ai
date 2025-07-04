@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { MessageCircle, Send, Mic, MicOff, Bot, User, Volume2, VolumeX, Sparkles, MapPin } from "lucide-react";
+import { MessageCircle, Send, Mic, MicOff, Bot, User, Volume2, VolumeX, Sparkles, MapPin, AlertCircle } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
@@ -15,6 +15,7 @@ interface Message {
   content: string;
   role: 'user' | 'assistant';
   timestamp: Date;
+  error?: boolean;
 }
 
 const ChatBot = () => {
@@ -32,6 +33,7 @@ const ChatBot = () => {
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [voiceEnabled, setVoiceEnabled] = useState(false);
   const [userLocation, setUserLocation] = useState<string>("");
+  const [connectionStatus, setConnectionStatus] = useState<'connected' | 'error' | 'checking'>('checking');
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
 
@@ -62,16 +64,58 @@ const ChatBot = () => {
           const lat = position.coords.latitude;
           const lng = position.coords.longitude;
           setUserLocation(`${lat.toFixed(4)}, ${lng.toFixed(4)}`);
+          console.log('📍 User location obtained:', `${lat.toFixed(4)}, ${lng.toFixed(4)}`);
         },
         (error) => {
-          console.log("Location access denied or unavailable");
+          console.log("📍 Location access denied or unavailable:", error);
         }
       );
     }
+
+    // Test connection to Gemini API
+    testConnection();
   }, []);
+
+  const testConnection = async () => {
+    try {
+      console.log('🔍 Testing Gemini API connection...');
+      setConnectionStatus('checking');
+      
+      const { data, error } = await supabase.functions.invoke('gemini-chat', {
+        body: {
+          messages: [{ role: 'user', content: 'test' }]
+        }
+      });
+
+      console.log('🔍 Connection test result:', { data, error });
+
+      if (error) {
+        console.error('❌ Connection test failed:', error);
+        setConnectionStatus('error');
+      } else if (data?.response || data?.error) {
+        console.log('✅ Connection test successful');
+        setConnectionStatus('connected');
+      } else {
+        console.log('⚠️ Unexpected response format');
+        setConnectionStatus('error');
+      }
+    } catch (error) {
+      console.error('💥 Connection test error:', error);
+      setConnectionStatus('error');
+    }
+  };
 
   const callGeminiAPI = async (chatHistory: Message[]): Promise<string> => {
     try {
+      console.log('🚀 Calling Gemini API with', chatHistory.length, 'messages');
+      console.log('📤 Request payload:', {
+        messages: chatHistory.map(msg => ({
+          role: msg.role,
+          content: msg.content
+        })),
+        userLocation: userLocation || undefined
+      });
+
       const { data, error } = await supabase.functions.invoke('gemini-chat', {
         body: {
           messages: chatHistory.map(msg => ({
@@ -82,25 +126,40 @@ const ChatBot = () => {
         }
       });
 
+      console.log('📥 Supabase function response:', { data, error });
+
       if (error) {
-        console.error('Supabase function error:', error);
+        console.error('❌ Supabase function error:', error);
         throw new Error(error.message || 'Failed to call Gemini API');
       }
 
       if (data?.error) {
-        console.error('Gemini API error:', data.error);
+        console.error('❌ Gemini API error from server:', data.error);
+        // If there's an error but also a response, use the response (fallback)
+        if (data.response) {
+          console.log('✅ Using fallback response');
+          return data.response;
+        }
         throw new Error(data.error);
       }
 
-      return data?.response || "I apologize, but I'm having trouble processing your request right now. Please try asking about Konkan beaches, food, or attractions!";
+      if (!data?.response) {
+        console.error('❌ No response from Gemini API');
+        throw new Error('No response received from AI service');
+      }
+
+      console.log('✅ Successfully received response:', data.response.substring(0, 100) + '...');
+      return data.response;
     } catch (error) {
-      console.error('Error calling Gemini API:', error);
+      console.error('💥 Error calling Gemini API:', error);
       throw error;
     }
   };
 
   const handleSendMessage = async () => {
     if (!inputMessage.trim() || isLoading) return;
+
+    console.log('📝 Sending message:', inputMessage);
 
     const userMessage: Message = {
       id: Date.now().toString(),
@@ -117,6 +176,8 @@ const ChatBot = () => {
     try {
       // Get the last 10 messages for context (to avoid token limits)
       const recentMessages = newMessages.slice(-10);
+      console.log('🔄 Processing', recentMessages.length, 'recent messages');
+      
       const botResponse = await callGeminiAPI(recentMessages);
 
       const assistantMessage: Message = {
@@ -127,6 +188,7 @@ const ChatBot = () => {
       };
 
       setMessages(prev => [...prev, assistantMessage]);
+      setConnectionStatus('connected');
 
       // Speak the response if voice is enabled
       if (voiceEnabled) {
@@ -142,27 +204,30 @@ const ChatBot = () => {
             question: userMessage.content,
             response: botResponse
           });
+          console.log('💾 Chat log saved to database');
         }
       } catch (dbError) {
-        console.log('Failed to save chat log:', dbError);
+        console.log('⚠️ Failed to save chat log:', dbError);
         // Don't show error to user as this is not critical
       }
 
     } catch (error) {
-      console.error('Error getting bot response:', error);
+      console.error('💥 Error getting bot response:', error);
+      setConnectionStatus('error');
       
       const errorMessage: Message = {
         id: (Date.now() + 1).toString(),
         content: "I'm sorry, I'm experiencing some technical difficulties. Please try again in a moment! In the meantime, I'd love to help you plan your Konkan adventure - ask me about beaches, food, or activities! 🏖️",
         role: 'assistant',
-        timestamp: new Date()
+        timestamp: new Date(),
+        error: true
       };
 
       setMessages(prev => [...prev, errorMessage]);
 
       toast({
         title: "Connection Error",
-        description: "Unable to connect to the AI service. Please try again.",
+        description: "Unable to connect to the AI service. Please check your internet connection and try again.",
         variant: "destructive"
       });
     } finally {
@@ -171,6 +236,7 @@ const ChatBot = () => {
   };
 
   const handleQuickQuestion = (question: string) => {
+    if (isLoading) return;
     setInputMessage(question);
     setTimeout(() => handleSendMessage(), 100);
   };
@@ -186,15 +252,18 @@ const ChatBot = () => {
 
       recognition.onstart = () => {
         setIsListening(true);
+        console.log('🎤 Voice recognition started');
       };
 
       recognition.onresult = (event: any) => {
         const transcript = event.results[0][0].transcript;
+        console.log('🎤 Voice input:', transcript);
         setInputMessage(transcript);
         setIsListening(false);
       };
 
-      recognition.onerror = () => {
+      recognition.onerror = (event: any) => {
+        console.error('🎤 Voice recognition error:', event.error);
         setIsListening(false);
         toast({
           title: "Voice Recognition Error",
@@ -205,6 +274,7 @@ const ChatBot = () => {
 
       recognition.onend = () => {
         setIsListening(false);
+        console.log('🎤 Voice recognition ended');
       };
 
       recognition.start();
@@ -227,9 +297,18 @@ const ChatBot = () => {
       utterance.pitch = 1;
       utterance.volume = 0.8;
 
-      utterance.onstart = () => setIsSpeaking(true);
-      utterance.onend = () => setIsSpeaking(false);
-      utterance.onerror = () => setIsSpeaking(false);
+      utterance.onstart = () => {
+        setIsSpeaking(true);
+        console.log('🔊 Text-to-speech started');
+      };
+      utterance.onend = () => {
+        setIsSpeaking(false);
+        console.log('🔊 Text-to-speech ended');
+      };
+      utterance.onerror = () => {
+        setIsSpeaking(false);
+        console.error('🔊 Text-to-speech error');
+      };
 
       speechSynthesis.speak(utterance);
     }
@@ -239,6 +318,33 @@ const ChatBot = () => {
     if ('speechSynthesis' in window) {
       speechSynthesis.cancel();
       setIsSpeaking(false);
+      console.log('🔊 Text-to-speech stopped');
+    }
+  };
+
+  const getConnectionStatusBadge = () => {
+    switch (connectionStatus) {
+      case 'connected':
+        return (
+          <Badge className="bg-green-100 text-green-700 border-0 px-4 py-2">
+            <Sparkles className="mr-2" size={16} />
+            AI Connected
+          </Badge>
+        );
+      case 'error':
+        return (
+          <Badge className="bg-red-100 text-red-700 border-0 px-4 py-2">
+            <AlertCircle className="mr-2" size={16} />
+            AI Offline
+          </Badge>
+        );
+      case 'checking':
+        return (
+          <Badge className="bg-yellow-100 text-yellow-700 border-0 px-4 py-2">
+            <div className="w-4 h-4 border-2 border-yellow-600 border-t-transparent rounded-full animate-spin mr-2"></div>
+            Connecting...
+          </Badge>
+        );
     }
   };
 
@@ -262,11 +368,8 @@ const ChatBot = () => {
               <p className="text-xl mb-6 max-w-2xl mx-auto">
                 Powered by Google Gemini 1.5 Flash - Get instant, intelligent answers about Konkan travel
               </p>
-              <div className="flex justify-center gap-4">
-                <Badge className="bg-white/20 text-white border-0 px-4 py-2">
-                  <Sparkles className="mr-2" size={16} />
-                  Google Gemini AI
-                </Badge>
+              <div className="flex justify-center gap-4 flex-wrap">
+                {getConnectionStatusBadge()}
                 <Badge className="bg-white/20 text-white border-0 px-4 py-2">
                   <Volume2 className="mr-2" size={16} />
                   Voice Enabled
@@ -315,6 +418,15 @@ const ChatBot = () => {
                       Stop
                     </Button>
                   )}
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={testConnection}
+                    disabled={connectionStatus === 'checking'}
+                    className="rounded-xl"
+                  >
+                    Test AI
+                  </Button>
                 </div>
               </CardTitle>
             </CardHeader>
@@ -336,23 +448,31 @@ const ChatBot = () => {
                         <div className={`w-8 h-8 rounded-full flex items-center justify-center shadow-lg ${
                           message.role === 'user' 
                             ? 'bg-gradient-to-r from-konkan-orange-500 to-konkan-orange-600' 
+                            : message.error
+                            ? 'bg-gradient-to-r from-red-500 to-red-600'
                             : 'bg-gradient-to-r from-konkan-turquoise-500 to-konkan-turquoise-600'
                         }`}>
                           {message.role === 'user' ? 
                             <User className="text-white" size={16} /> : 
+                            message.error ? 
+                            <AlertCircle className="text-white" size={16} /> :
                             <Bot className="text-white" size={16} />
                           }
                         </div>
                         <div className={`p-4 rounded-2xl shadow-lg transition-all duration-300 hover:shadow-xl ${
                           message.role === 'user'
                             ? 'bg-gradient-to-r from-konkan-orange-500 to-konkan-orange-600 text-white'
+                            : message.error
+                            ? 'bg-red-50 border border-red-200 text-red-800'
                             : 'bg-white/90 backdrop-blur-md border border-white/30 text-gray-800'
                         }`}>
                           <p className="text-sm leading-relaxed break-words whitespace-pre-wrap">{message.content}</p>
                           <p className={`text-xs mt-2 opacity-70 ${
-                            message.role === 'user' ? 'text-orange-100' : 'text-gray-500'
+                            message.role === 'user' ? 'text-orange-100' : 
+                            message.error ? 'text-red-600' : 'text-gray-500'
                           }`}>
                             {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                            {message.error && ' • Error'}
                           </p>
                         </div>
                       </div>
@@ -463,7 +583,8 @@ const ChatBot = () => {
             </ul>
             <div className="mt-4 p-3 bg-blue-100 border border-blue-300 rounded-lg">
               <p className="text-sm text-blue-800">
-                <strong>Setup Required:</strong> Add your Google Gemini API key to the .env file to activate the AI chatbot.
+                <strong>Setup Required:</strong> Add your Google Gemini API key to the .env file to activate the AI chatbot. 
+                Get your free API key from <a href="https://makersuite.google.com/app/apikey" target="_blank" rel="noopener noreferrer" className="underline">Google AI Studio</a>.
               </p>
             </div>
           </motion.div>
