@@ -3,11 +3,14 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { Star, Search, MapPin, Clock, DollarSign, Calendar } from "lucide-react";
+import { Star, Search, MapPin, Clock, DollarSign, Calendar, Heart, MessageSquare, CreditCard } from "lucide-react";
 import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
+import { BookingModal } from "./BookingModal";
+import { ReviewModal } from "./ReviewModal";
+import { FavoriteButton } from "./FavoriteButton";
 
 interface ExploreSectionProps {
   title?: string;
@@ -33,6 +36,7 @@ type Package = {
   rating?: number;
   latitude?: number;
   longitude?: number;
+  type?: 'package' | 'tour_package';
 };
 
 const categories: Category[] = [
@@ -60,7 +64,8 @@ const staticPackages: Package[] = [
     category: "beach",
     rating: 4.8,
     latitude: 16.0167,
-    longitude: 73.4667
+    longitude: 73.4667,
+    type: 'package'
   },
   {
     id: "2",
@@ -73,7 +78,8 @@ const staticPackages: Package[] = [
     category: "historical",
     rating: 4.7,
     latitude: 16.0333,
-    longitude: 73.5000
+    longitude: 73.5000,
+    type: 'package'
   },
   {
     id: "3",
@@ -86,7 +92,8 @@ const staticPackages: Package[] = [
     category: "waterfall",
     rating: 4.9,
     latitude: 15.9500,
-    longitude: 74.0000
+    longitude: 74.0000,
+    type: 'package'
   },
   {
     id: "4",
@@ -97,7 +104,8 @@ const staticPackages: Package[] = [
     price: 1800,
     duration: "1 Day",
     category: "cultural",
-    rating: 4.6
+    rating: 4.6,
+    type: 'package'
   },
   {
     id: "5",
@@ -108,7 +116,8 @@ const staticPackages: Package[] = [
     price: 2200,
     duration: "3 Days, 2 Nights",
     category: "festival",
-    rating: 4.8
+    rating: 4.8,
+    type: 'package'
   },
   {
     id: "6",
@@ -121,7 +130,8 @@ const staticPackages: Package[] = [
     category: "hidden",
     rating: 4.5,
     latitude: 15.8667,
-    longitude: 73.6333
+    longitude: 73.6333,
+    type: 'package'
   },
   {
     id: "7",
@@ -132,7 +142,8 @@ const staticPackages: Package[] = [
     price: 1500,
     duration: "2 Days, 1 Night",
     category: "temple",
-    rating: 4.4
+    rating: 4.4,
+    type: 'package'
   },
   {
     id: "8",
@@ -143,7 +154,8 @@ const staticPackages: Package[] = [
     price: 5200,
     duration: "5 Days, 4 Nights",
     category: "seasonal",
-    rating: 4.7
+    rating: 4.7,
+    type: 'package'
   },
   {
     id: "9",
@@ -154,7 +166,8 @@ const staticPackages: Package[] = [
     price: 4200,
     duration: "4 Days, 3 Nights",
     category: "nature",
-    rating: 4.6
+    rating: 4.6,
+    type: 'package'
   }
 ];
 
@@ -168,6 +181,9 @@ export const ExploreSection = ({
   const [loading, setLoading] = useState(true);
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
+  const [selectedPackage, setSelectedPackage] = useState<Package | null>(null);
+  const [showBookingModal, setShowBookingModal] = useState(false);
+  const [showReviewModal, setShowReviewModal] = useState(false);
   const navigate = useNavigate();
 
   // Reusable function for Google Maps directions
@@ -191,7 +207,8 @@ export const ExploreSection = ({
           const mappedData = data.map((pkg, index) => ({
             ...pkg,
             category: staticPackages[index % staticPackages.length]?.category || "beach",
-            rating: 4.5 + Math.random() * 0.5
+            rating: 4.5 + Math.random() * 0.5,
+            type: 'package' as const
           }));
           setPackages([...mappedData, ...staticPackages]);
         }
@@ -231,6 +248,16 @@ export const ExploreSection = ({
 
     setFilteredPackages(filtered);
   }, [packages, selectedCategory, searchQuery, limit]);
+
+  const handleBookNow = (pkg: Package) => {
+    setSelectedPackage(pkg);
+    setShowBookingModal(true);
+  };
+
+  const handleWriteReview = (pkg: Package) => {
+    setSelectedPackage(pkg);
+    setShowReviewModal(true);
+  };
 
   return (
     <section id="explore-section" className="py-16 bg-gradient-to-br from-konkan-turquoise-50 via-white to-konkan-orange-50">
@@ -327,12 +354,19 @@ export const ExploreSection = ({
                           />
                           <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                           
-                          {pkg.rating && (
-                            <div className="absolute top-4 right-4 bg-white/90 backdrop-blur-sm rounded-full px-3 py-1 flex items-center gap-1 shadow-lg">
-                              <Star className="text-yellow-500 fill-current" size={14} />
-                              <span className="text-sm font-medium">{pkg.rating.toFixed(1)}</span>
-                            </div>
-                          )}
+                          <div className="absolute top-4 right-4 flex gap-2">
+                            {pkg.rating && (
+                              <div className="bg-white/90 backdrop-blur-sm rounded-full px-3 py-1 flex items-center gap-1 shadow-lg">
+                                <Star className="text-yellow-500 fill-current" size={14} />
+                                <span className="text-sm font-medium">{pkg.rating.toFixed(1)}</span>
+                              </div>
+                            )}
+                            <FavoriteButton 
+                              packageId={pkg.id} 
+                              packageType={pkg.type || 'package'}
+                              className="bg-white/90 backdrop-blur-sm"
+                            />
+                          </div>
 
                           {pkg.price && (
                             <div className="absolute top-4 left-4 bg-konkan-orange-500 text-white rounded-full px-3 py-1 shadow-lg">
@@ -373,24 +407,58 @@ export const ExploreSection = ({
                           )}
 
                           <div className="flex flex-col gap-2">
-                            <Button className="w-full bg-gradient-to-r from-konkan-turquoise-500 to-konkan-orange-500 hover:from-konkan-turquoise-600 hover:to-konkan-orange-600 text-white rounded-xl shadow-lg hover:shadow-xl transition-all duration-300">
-                              <Calendar className="mr-2" size={16} />
-                              View Details
-                            </Button>
-                            
-                            {hasCoords && (
-                              <Button
-                                variant="outline"
-                                className="w-full border-konkan-turquoise-200 text-konkan-turquoise-600 hover:bg-konkan-turquoise-50 rounded-xl transition-all duration-300"
+                            <div className="flex gap-2">
+                              <Button 
+                                className="flex-1 bg-gradient-to-r from-konkan-turquoise-500 to-konkan-orange-500 hover:from-konkan-turquoise-600 hover:to-konkan-orange-600 text-white rounded-xl shadow-lg hover:shadow-xl transition-all duration-300"
                                 onClick={(e) => {
                                   e.stopPropagation();
-                                  handleNavigate(pkg.latitude!, pkg.longitude!);
+                                  navigate(`/package/${pkg.id}`);
                                 }}
                               >
-                                <MapPin className="mr-2" size={16} />
-                                Navigate
+                                <Calendar className="mr-2" size={16} />
+                                View Details
                               </Button>
-                            )}
+                              
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="border-konkan-orange-200 text-konkan-orange-600 hover:bg-konkan-orange-50 rounded-xl transition-all duration-300"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleWriteReview(pkg);
+                                }}
+                              >
+                                <MessageSquare size={16} />
+                              </Button>
+                            </div>
+                            
+                            <div className="flex gap-2">
+                              <Button
+                                variant="outline"
+                                className="flex-1 border-konkan-turquoise-200 text-konkan-turquoise-600 hover:bg-konkan-turquoise-50 rounded-xl transition-all duration-300"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleBookNow(pkg);
+                                }}
+                              >
+                                <CreditCard className="mr-2" size={16} />
+                                Book Now
+                              </Button>
+                              
+                              {hasCoords && (
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  className="border-konkan-turquoise-200 text-konkan-turquoise-600 hover:bg-konkan-turquoise-50 rounded-xl transition-all duration-300"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleNavigate(pkg.latitude!, pkg.longitude!);
+                                  }}
+                                >
+                                  <MapPin size={16} />
+                                </Button>
+                              )}
+                            </div>
                           </div>
                         </CardContent>
                       </Card>
@@ -441,6 +509,40 @@ export const ExploreSection = ({
           </div>
         )}
       </div>
+
+      {/* Booking Modal */}
+      {selectedPackage && (
+        <BookingModal
+          isOpen={showBookingModal}
+          onClose={() => {
+            setShowBookingModal(false);
+            setSelectedPackage(null);
+          }}
+          packageData={{
+            id: selectedPackage.id,
+            title: selectedPackage.title,
+            price: selectedPackage.price || 0,
+            duration: selectedPackage.duration || "",
+            type: selectedPackage.type || 'package'
+          }}
+        />
+      )}
+
+      {/* Review Modal */}
+      {selectedPackage && (
+        <ReviewModal
+          isOpen={showReviewModal}
+          onClose={() => {
+            setShowReviewModal(false);
+            setSelectedPackage(null);
+          }}
+          packageData={{
+            id: selectedPackage.id,
+            title: selectedPackage.title,
+            type: selectedPackage.type || 'package'
+          }}
+        />
+      )}
     </section>
   );
 };
