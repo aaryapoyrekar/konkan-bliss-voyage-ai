@@ -5,14 +5,15 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { MessageCircle, Send, Mic, MicOff, Bot, User, Volume2, VolumeX, Sparkles } from "lucide-react";
+import { MessageCircle, Send, Mic, MicOff, Bot, User, Volume2, VolumeX, Sparkles, MapPin } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 
 interface Message {
   id: string;
-  text: string;
-  sender: 'user' | 'bot';
+  content: string;
+  role: 'user' | 'assistant';
   timestamp: Date;
 }
 
@@ -20,8 +21,8 @@ const ChatBot = () => {
   const [messages, setMessages] = useState<Message[]>([
     {
       id: '1',
-      text: "Namaste! 🙏 I'm your AI travel guide for the beautiful Konkan coast. I can help you with travel planning, local information, historical facts, and recommendations. What would you like to know?",
-      sender: 'bot',
+      content: "Namaste! 🙏 I'm KonkanBot, your AI travel guide powered by Google Gemini. I can help you with travel planning, local information, historical facts, and recommendations for the beautiful Konkan coast. What would you like to know?",
+      role: 'assistant',
       timestamp: new Date()
     }
   ]);
@@ -30,6 +31,7 @@ const ChatBot = () => {
   const [isListening, setIsListening] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [voiceEnabled, setVoiceEnabled] = useState(false);
+  const [userLocation, setUserLocation] = useState<string>("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
 
@@ -39,7 +41,9 @@ const ChatBot = () => {
     "Local Malvani cuisine",
     "Historical places to visit",
     "Water sports activities",
-    "Budget travel tips"
+    "Budget travel tips",
+    "Scuba diving in Tarkarli",
+    "Sindhudurg Fort history"
   ];
 
   const scrollToBottom = () => {
@@ -50,68 +54,120 @@ const ChatBot = () => {
     scrollToBottom();
   }, [messages]);
 
-  const generateBotResponse = (userMessage: string): string => {
-    const lowerMessage = userMessage.toLowerCase();
-    
-    if (lowerMessage.includes('beach') || lowerMessage.includes('tarkarli') || lowerMessage.includes('malvan')) {
-      return "🏖️ The Konkan coast has some of India's most pristine beaches! Tarkarli Beach is famous for its crystal-clear waters and water sports. Malvan Beach offers excellent scuba diving opportunities. For a peaceful experience, try Vengurla or Devbagh beaches. The best time to visit is October to March when the weather is pleasant.";
+  useEffect(() => {
+    // Get user's location for better recommendations
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          const lat = position.coords.latitude;
+          const lng = position.coords.longitude;
+          setUserLocation(`${lat.toFixed(4)}, ${lng.toFixed(4)}`);
+        },
+        (error) => {
+          console.log("Location access denied or unavailable");
+        }
+      );
     }
-    
-    if (lowerMessage.includes('food') || lowerMessage.includes('cuisine') || lowerMessage.includes('malvani')) {
-      return "🍽️ Malvani cuisine is a treat for seafood lovers! Must-try dishes include Koliwada prawns, fish curry with coconut, sol kadhi (kokum drink), and modak. Don't miss the famous Malvani fish thali. Popular restaurants include Chaitanya Restaurant in Malvan and Athithi Bamboo in Tarkarli.";
+  }, []);
+
+  const callGeminiAPI = async (chatHistory: Message[]): Promise<string> => {
+    try {
+      const { data, error } = await supabase.functions.invoke('gemini-chat', {
+        body: {
+          messages: chatHistory.map(msg => ({
+            role: msg.role,
+            content: msg.content
+          })),
+          userLocation: userLocation || undefined
+        }
+      });
+
+      if (error) {
+        console.error('Supabase function error:', error);
+        throw new Error(error.message || 'Failed to call Gemini API');
+      }
+
+      if (data?.error) {
+        console.error('Gemini API error:', data.error);
+        throw new Error(data.error);
+      }
+
+      return data?.response || "I apologize, but I'm having trouble processing your request right now. Please try asking about Konkan beaches, food, or attractions!";
+    } catch (error) {
+      console.error('Error calling Gemini API:', error);
+      throw error;
     }
-    
-    if (lowerMessage.includes('fort') || lowerMessage.includes('sindhudurg') || lowerMessage.includes('history')) {
-      return "🏰 Sindhudurg Fort is a magnificent sea fort built by Chhatrapati Shivaji Maharaj in 1664. It's located on a rocky island and showcases brilliant Maratha architecture. The fort has temples, freshwater wells, and offers stunning sea views. Entry fee is ₹25 for Indians. Best visited during early morning or evening.";
-    }
-    
-    if (lowerMessage.includes('time') || lowerMessage.includes('when') || lowerMessage.includes('season')) {
-      return "🌤️ The best time to visit Konkan is from October to March when the weather is pleasant and ideal for beach activities. Monsoon season (June-September) offers lush greenery and waterfalls but heavy rains. Summer (April-May) can be hot and humid. Winter months are perfect for water sports and sightseeing.";
-    }
-    
-    if (lowerMessage.includes('budget') || lowerMessage.includes('cost') || lowerMessage.includes('price')) {
-      return "💰 Konkan can be budget-friendly! Accommodation ranges from ₹800-3000 per night. Local food costs ₹200-500 per meal. Transportation by bus is economical (₹100-300). Water sports cost ₹500-2000. A 3-day trip can cost ₹5000-15000 per person depending on your choices. Homestays are great budget options!";
-    }
-    
-    if (lowerMessage.includes('activity') || lowerMessage.includes('sports') || lowerMessage.includes('adventure')) {
-      return "🏄‍♂️ Konkan offers amazing water activities! Scuba diving at Tarkarli (₹2500-4000), parasailing, jet skiing, banana boat rides, and dolphin watching. You can also try backwater cruises, fort trekking, waterfall rappelling at Amboli, and fishing with local fishermen. Book water sports in advance during peak season!";
-    }
-    
-    // Default response
-    return "🤔 That's an interesting question! I'd love to help you explore the Konkan coast. Could you be more specific about what you'd like to know? I can provide information about beaches, food, historical places, activities, travel tips, or anything else about the beautiful Konkan region!";
   };
 
   const handleSendMessage = async () => {
-    if (!inputMessage.trim()) return;
+    if (!inputMessage.trim() || isLoading) return;
 
     const userMessage: Message = {
       id: Date.now().toString(),
-      text: inputMessage,
-      sender: 'user',
+      content: inputMessage,
+      role: 'user',
       timestamp: new Date()
     };
 
-    setMessages(prev => [...prev, userMessage]);
+    const newMessages = [...messages, userMessage];
+    setMessages(newMessages);
     setInputMessage("");
     setIsLoading(true);
 
-    // Simulate AI processing delay
-    setTimeout(() => {
-      const botResponse: Message = {
+    try {
+      // Get the last 10 messages for context (to avoid token limits)
+      const recentMessages = newMessages.slice(-10);
+      const botResponse = await callGeminiAPI(recentMessages);
+
+      const assistantMessage: Message = {
         id: (Date.now() + 1).toString(),
-        text: generateBotResponse(inputMessage),
-        sender: 'bot',
+        content: botResponse,
+        role: 'assistant',
         timestamp: new Date()
       };
 
-      setMessages(prev => [...prev, botResponse]);
-      setIsLoading(false);
+      setMessages(prev => [...prev, assistantMessage]);
 
       // Speak the response if voice is enabled
       if (voiceEnabled) {
-        speakText(botResponse.text);
+        speakText(botResponse);
       }
-    }, 1000 + Math.random() * 1000);
+
+      // Save chat log to database (optional)
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+          await supabase.from('chat_logs').insert({
+            user_id: user.id,
+            question: userMessage.content,
+            response: botResponse
+          });
+        }
+      } catch (dbError) {
+        console.log('Failed to save chat log:', dbError);
+        // Don't show error to user as this is not critical
+      }
+
+    } catch (error) {
+      console.error('Error getting bot response:', error);
+      
+      const errorMessage: Message = {
+        id: (Date.now() + 1).toString(),
+        content: "I'm sorry, I'm experiencing some technical difficulties. Please try again in a moment! In the meantime, I'd love to help you plan your Konkan adventure - ask me about beaches, food, or activities! 🏖️",
+        role: 'assistant',
+        timestamp: new Date()
+      };
+
+      setMessages(prev => [...prev, errorMessage]);
+
+      toast({
+        title: "Connection Error",
+        description: "Unable to connect to the AI service. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleQuickQuestion = (question: string) => {
@@ -201,20 +257,26 @@ const ChatBot = () => {
               transition={{ duration: 0.8 }}
             >
               <h1 className="text-4xl md:text-5xl font-bold font-display mb-4">
-                AI Travel Assistant
+                KonkanBot AI Assistant
               </h1>
               <p className="text-xl mb-6 max-w-2xl mx-auto">
-                Get instant answers about Konkan travel, local culture, and hidden gems
+                Powered by Google Gemini 1.5 Flash - Get instant, intelligent answers about Konkan travel
               </p>
               <div className="flex justify-center gap-4">
                 <Badge className="bg-white/20 text-white border-0 px-4 py-2">
                   <Sparkles className="mr-2" size={16} />
-                  Powered by AI
+                  Google Gemini AI
                 </Badge>
                 <Badge className="bg-white/20 text-white border-0 px-4 py-2">
                   <Volume2 className="mr-2" size={16} />
                   Voice Enabled
                 </Badge>
+                {userLocation && (
+                  <Badge className="bg-white/20 text-white border-0 px-4 py-2">
+                    <MapPin className="mr-2" size={16} />
+                    Location Aware
+                  </Badge>
+                )}
               </div>
             </motion.div>
           </div>
@@ -230,8 +292,8 @@ const ChatBot = () => {
                     <Bot className="text-white" size={20} />
                   </div>
                   <div>
-                    <h3 className="text-lg font-semibold text-gray-800">Konkan AI Guide</h3>
-                    <p className="text-sm text-gray-600">Your personal travel assistant</p>
+                    <h3 className="text-lg font-semibold text-gray-800">KonkanBot</h3>
+                    <p className="text-sm text-gray-600">Powered by Google Gemini 1.5 Flash</p>
                   </div>
                 </div>
                 <div className="flex gap-2">
@@ -268,27 +330,27 @@ const ChatBot = () => {
                       animate={{ opacity: 1, y: 0 }}
                       exit={{ opacity: 0, y: -20 }}
                       transition={{ duration: 0.4 }}
-                      className={`flex ${message.sender === 'user' ? 'justify-end' : 'justify-start'}`}
+                      className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
                     >
-                      <div className={`flex items-start gap-3 max-w-[80%] ${message.sender === 'user' ? 'flex-row-reverse' : ''}`}>
+                      <div className={`flex items-start gap-3 max-w-[80%] ${message.role === 'user' ? 'flex-row-reverse' : ''}`}>
                         <div className={`w-8 h-8 rounded-full flex items-center justify-center shadow-lg ${
-                          message.sender === 'user' 
+                          message.role === 'user' 
                             ? 'bg-gradient-to-r from-konkan-orange-500 to-konkan-orange-600' 
                             : 'bg-gradient-to-r from-konkan-turquoise-500 to-konkan-turquoise-600'
                         }`}>
-                          {message.sender === 'user' ? 
+                          {message.role === 'user' ? 
                             <User className="text-white" size={16} /> : 
                             <Bot className="text-white" size={16} />
                           }
                         </div>
                         <div className={`p-4 rounded-2xl shadow-lg transition-all duration-300 hover:shadow-xl ${
-                          message.sender === 'user'
+                          message.role === 'user'
                             ? 'bg-gradient-to-r from-konkan-orange-500 to-konkan-orange-600 text-white'
                             : 'bg-white/90 backdrop-blur-md border border-white/30 text-gray-800'
                         }`}>
-                          <p className="text-sm leading-relaxed break-words">{message.text}</p>
+                          <p className="text-sm leading-relaxed break-words whitespace-pre-wrap">{message.content}</p>
                           <p className={`text-xs mt-2 opacity-70 ${
-                            message.sender === 'user' ? 'text-orange-100' : 'text-gray-500'
+                            message.role === 'user' ? 'text-orange-100' : 'text-gray-500'
                           }`}>
                             {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                           </p>
@@ -333,7 +395,8 @@ const ChatBot = () => {
                       animate={{ opacity: 1, scale: 1 }}
                       transition={{ delay: index * 0.1 }}
                       onClick={() => handleQuickQuestion(question)}
-                      className="px-3 py-1 bg-konkan-turquoise-100 text-konkan-turquoise-700 text-xs rounded-full hover:bg-konkan-turquoise-200 transition-all duration-200 hover:scale-105"
+                      disabled={isLoading}
+                      className="px-3 py-1 bg-konkan-turquoise-100 text-konkan-turquoise-700 text-xs rounded-full hover:bg-konkan-turquoise-200 transition-all duration-200 hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       {question}
                     </motion.button>
@@ -350,13 +413,14 @@ const ChatBot = () => {
                       onChange={(e) => setInputMessage(e.target.value)}
                       placeholder="Ask me anything about Konkan..."
                       className="pr-12 rounded-2xl border-konkan-turquoise-200 focus:border-konkan-turquoise-400 bg-white/90 backdrop-blur-sm focus:bg-white transition-all duration-200"
-                      onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
+                      onKeyPress={(e) => e.key === 'Enter' && !e.shiftKey && handleSendMessage()}
+                      disabled={isLoading}
                     />
                     <Button
                       variant="ghost"
                       size="sm"
                       onClick={startListening}
-                      disabled={isListening}
+                      disabled={isListening || isLoading}
                       className={`absolute right-2 top-1/2 transform -translate-y-1/2 rounded-xl transition-all duration-200 ${
                         isListening ? 'text-red-500 bg-red-50' : 'text-konkan-turquoise-600 hover:bg-konkan-turquoise-50'
                       }`}
@@ -367,7 +431,7 @@ const ChatBot = () => {
                   <Button
                     onClick={handleSendMessage}
                     disabled={!inputMessage.trim() || isLoading}
-                    className="bg-gradient-to-r from-konkan-turquoise-500 to-konkan-orange-500 hover:from-konkan-turquoise-600 hover:to-konkan-orange-600 text-white rounded-2xl px-6 shadow-lg hover:shadow-xl transition-all duration-200"
+                    className="bg-gradient-to-r from-konkan-turquoise-500 to-konkan-orange-500 hover:from-konkan-turquoise-600 hover:to-konkan-orange-600 text-white rounded-2xl px-6 shadow-lg hover:shadow-xl transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     <Send size={16} />
                   </Button>
@@ -384,20 +448,24 @@ const ChatBot = () => {
             className="mt-8 bg-konkan-sand-50 border border-konkan-sand-200 rounded-xl p-6"
           >
             <h3 className="text-lg font-semibold text-konkan-sand-800 mb-2">
-              🤖 AI Assistant Features
+              🤖 Google Gemini 1.5 Flash Integration
             </h3>
             <p className="text-konkan-sand-700 mb-3">
-              This AI chatbot provides instant answers about Konkan travel. In a production environment, 
-              this would be powered by Google Gemini 1.5 Flash or similar AI models for:
+              This chatbot is powered by Google's latest Gemini 1.5 Flash model, providing:
             </p>
             <ul className="grid grid-cols-1 md:grid-cols-2 gap-2 text-konkan-sand-700">
-              <li>• Real-time travel information</li>
-              <li>• Personalized recommendations</li>
-              <li>• Historical and cultural insights</li>
-              <li>• Weather and seasonal advice</li>
-              <li>• Local cuisine suggestions</li>
-              <li>• Activity and attraction details</li>
+              <li>• Real-time AI responses about Konkan tourism</li>
+              <li>• Context-aware conversations with memory</li>
+              <li>• Location-based recommendations</li>
+              <li>• Voice input and text-to-speech output</li>
+              <li>• Specialized knowledge about Konkan coast</li>
+              <li>• Integration with your travel preferences</li>
             </ul>
+            <div className="mt-4 p-3 bg-blue-100 border border-blue-300 rounded-lg">
+              <p className="text-sm text-blue-800">
+                <strong>Setup Required:</strong> Add your Google Gemini API key to the .env file to activate the AI chatbot.
+              </p>
+            </div>
           </motion.div>
         </div>
       </div>
