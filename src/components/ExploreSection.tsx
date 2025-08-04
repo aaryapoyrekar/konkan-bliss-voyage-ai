@@ -3,12 +3,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { Star, Search, MapPin, Clock, DollarSign, Calendar, Heart, MessageSquare, CreditCard } from "lucide-react";
+import { Star, Search, MapPin, Clock, DollarSign, Calendar, Heart, MessageSquare } from "lucide-react";
 import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { BookingModal } from "./BookingModal";
 import { ReviewModal } from "./ReviewModal";
 import { FavoriteButton } from "./FavoriteButton";
 
@@ -182,7 +181,6 @@ export const ExploreSection = ({
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedPackage, setSelectedPackage] = useState<Package | null>(null);
-  const [showBookingModal, setShowBookingModal] = useState(false);
   const [showReviewModal, setShowReviewModal] = useState(false);
   const navigate = useNavigate();
 
@@ -248,11 +246,6 @@ export const ExploreSection = ({
 
     setFilteredPackages(filtered);
   }, [packages, selectedCategory, searchQuery, limit]);
-
-  const handleBookNow = (pkg: Package) => {
-    setSelectedPackage(pkg);
-    setShowBookingModal(true);
-  };
 
   const handleWriteReview = (pkg: Package) => {
     setSelectedPackage(pkg);
@@ -433,22 +426,10 @@ export const ExploreSection = ({
                             </div>
                             
                             <div className="flex gap-2">
-                              <Button
-                                variant="outline"
-                                className="flex-1 border-konkan-turquoise-200 text-konkan-turquoise-600 hover:bg-konkan-turquoise-50 rounded-xl transition-all duration-300"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleBookNow(pkg);
-                                }}
-                              >
-                                <CreditCard className="mr-2" size={16} />
-                                Book Now
-                              </Button>
-                              
                               {hasCoords && (
                                 <Button
                                   variant="outline"
-                                  size="sm"
+                                  className="flex-1"
                                   className="border-konkan-turquoise-200 text-konkan-turquoise-600 hover:bg-konkan-turquoise-50 rounded-xl transition-all duration-300"
                                   onClick={(e) => {
                                     e.stopPropagation();
@@ -456,6 +437,7 @@ export const ExploreSection = ({
                                   }}
                                 >
                                   <MapPin size={16} />
+                                  Navigate
                                 </Button>
                               )}
                             </div>
@@ -510,23 +492,6 @@ export const ExploreSection = ({
         )}
       </div>
 
-      {/* Booking Modal */}
-      {selectedPackage && (
-        <BookingModal
-          isOpen={showBookingModal}
-          onClose={() => {
-            setShowBookingModal(false);
-            setSelectedPackage(null);
-          }}
-          packageData={{
-            id: selectedPackage.id,
-            title: selectedPackage.title,
-            price: selectedPackage.price || 0,
-            duration: selectedPackage.duration || "",
-            type: selectedPackage.type || 'package'
-          }}
-        />
-      )}
 
       {/* Review Modal */}
       {selectedPackage && (

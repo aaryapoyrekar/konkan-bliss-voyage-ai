@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Menu, X, Map, Heart, MessageCircle, User, Sparkles, Compass, Calendar, CreditCard } from "lucide-react";
+import { Menu, X, Map, Heart, MessageCircle, User, Sparkles, Compass, Calendar } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -78,12 +78,6 @@ export const Navigation = () => {
                 Chat AI
               </Button>
             </Link>
-            <Link to="/bookings">
-              <Button variant="ghost" size="sm" className="hover:bg-konkan-orange-50 hover:text-konkan-orange-600 rounded-xl">
-                <CreditCard size={16} className="mr-2" />
-                Bookings
-              </Button>
-            </Link>
             <Link to="/dashboard">
               <Button variant="ghost" size="sm" className="hover:bg-konkan-orange-50 hover:text-konkan-orange-600 rounded-xl">
                 <Calendar size={16} className="mr-2" />
@@ -148,12 +142,6 @@ export const Navigation = () => {
                   <Button variant="ghost" size="sm" className="w-full justify-start hover:bg-konkan-turquoise-50 rounded-xl">
                     <MessageCircle size={16} className="mr-2" />
                     Chat AI
-                  </Button>
-                </Link>
-                <Link to="/bookings" onClick={() => setIsOpen(false)}>
-                  <Button variant="ghost" size="sm" className="w-full justify-start hover:bg-konkan-orange-50 rounded-xl">
-                    <CreditCard size={16} className="mr-2" />
-                    Bookings
                   </Button>
                 </Link>
                 <Link to="/dashboard" onClick={() => setIsOpen(false)}>
